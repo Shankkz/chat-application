@@ -149,7 +149,7 @@ export default function Sidebar({ users, activeChatUser, setActiveChatUser, curr
       </div> */}
 
       {/* Users List */}
-      <div className="flex-1 overflow-y-auto px-3 space-y-1">
+      <div className="flex-1 overflow-y-auto px-3 py-5 space-y-1">
         {users.length === 0 ? (
           <div className="text-center py-10 px-6">
             <p className="text-light-300/20 text-sm">No active conversations.<br />Invite someone to start chatting!</p>
@@ -165,8 +165,8 @@ export default function Sidebar({ users, activeChatUser, setActiveChatUser, curr
                 key={user._id}
                 onClick={() => setActiveChatUser(user)}
                 className={`flex items-center p-4 rounded-2xl cursor-pointer transition-all duration-300 group ${isActive
-                    ? 'bg-brand-primary/10 border border-brand-primary/10'
-                    : 'hover:bg-white/[0.03] border border-transparent'
+                  ? 'bg-brand-primary/10 border border-brand-primary/10'
+                  : 'hover:bg-white/[0.03] border border-transparent'
                   }`}
               >
                 <div className="relative flex-shrink-0">
