@@ -5,8 +5,8 @@ import Sidebar from './Sidebar';
 import ChatArea from './ChatArea';
 import CallModal from './CallModal';
 
-const API_URL = 'http://localhost:5005/api';
-const SOCKET_URL = 'http://localhost:5005';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5005/api';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5005';
 
 export default function ChatLayout({ currentUser, onLogout, token }) {
   const [socket, setSocket] = useState(null);

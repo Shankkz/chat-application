@@ -3,7 +3,7 @@ import axios from 'axios';
 import Login from './components/Login';
 import ChatLayout from './components/ChatLayout';
 
-const API_URL = 'http://localhost:5005/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5005/api';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);

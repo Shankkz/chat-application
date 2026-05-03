@@ -3,7 +3,7 @@ import axios from 'axios';
 import { FiSend, FiVideo } from 'react-icons/fi';
 import MessageBubble from './MessageBubble';
 
-const API_URL = 'http://localhost:5005/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5005/api';
 
 export default function ChatArea({ currentUser, activeChatUser, socket, onCallUser, onlineUsers }) {
   const [messages, setMessages] = useState([]);
