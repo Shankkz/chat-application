@@ -1,30 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-neu-bg text-neu-text;
+  html, body, #root {
+    height: 100%;
     margin: 0;
-    font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  body {
+    @apply bg-dark-900 text-light-100 selection:bg-brand-primary/30;
+    font-family: 'Outfit', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 }
 
-/* Custom scrollbar for chat area */
+@layer components {
+  .glass-panel {
+    @apply bg-glass-bg backdrop-blur-xl border border-glass-border shadow-glass;
+  }
+
+  .glass-input {
+    @apply bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none transition-all focus:bg-white/10 focus:border-brand-primary/30;
+  }
+
+  .glass-card {
+    @apply bg-white/[0.02] backdrop-blur-md border border-white/5 shadow-soft rounded-2xl;
+  }
+}
+
+/* Modern Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-neu-dark rounded-full;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-neu-light rounded-full;
+  @apply bg-white/10 rounded-full transition-colors;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-neu-textMuted;
+  @apply bg-white/20;
 }

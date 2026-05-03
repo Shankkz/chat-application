@@ -13,13 +13,21 @@ const messageSchema = new mongoose.Schema({
   },
   text: {
     type: String,
-    required: true
+    required: false
+  },
+  imageUrl: {
+    type: String,
+    required: false
   },
   status: {
     type: String,
     enum: ['sent', 'delivered', 'read'],
     default: 'sent'
   },
+  deletedFor: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   createdAt: {
     type: Date,
     default: Date.now

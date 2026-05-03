@@ -24,24 +24,18 @@ export default function Login({ onSendOtp, onVerifyOtp }) {
   const validateIdentifier = () => {
     if (!identifier.trim()) return 'Email or phone number is required.';
     if (identifier.includes('@')) {
-      if (!isValidEmail(identifier)) return 'Please enter a valid email address (e.g. user@example.com).';
+      if (!isValidEmail(identifier)) return 'Please enter a valid email address.';
     } else {
-      if (!isValidPhone(identifier)) return 'Please enter a valid phone number (7–15 digits, optionally starting with +).';
+      if (!isValidPhone(identifier)) return 'Please enter a valid phone number.';
     }
     return null;
-  };
-
-  const handleIdentifierChange = (e) => {
-    setIdentifier(e.target.value);
-    setErrorMsg('');
   };
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
     const validationError = validateIdentifier();
     if (validationError) { setErrorMsg(validationError); return; }
-    if (!name.trim()) { setErrorMsg('Name is required to register or identify yourself.'); return; }
-    if (name.trim().length < 2) { setErrorMsg('Name must be at least 2 characters.'); return; }
+    if (!name.trim()) { setErrorMsg('Name is required.'); return; }
 
     setErrorMsg('');
     setLoading(true);
@@ -53,150 +47,106 @@ export default function Login({ onSendOtp, onVerifyOtp }) {
     } else if (result) {
       setGeneratedOtp(result);
       setStep(2);
-    } else {
-      setErrorMsg('Failed to send OTP. Please try again.');
     }
-  };
-
-  const handleOtpChange = (e) => {
-    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-    setOtp(val);
-    setOtpError('');
   };
 
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
-    if (otp.length !== 6) { setOtpError('Please enter the full 6-digit OTP.'); return; }
+    if (otp.length !== 6) { setOtpError('Enter 6-digit OTP.'); return; }
     setLoading(true);
     await onVerifyOtp(identifier.trim(), otp.trim());
     setLoading(false);
   };
 
-  const inputClass = (hasError) =>
-    `w-full bg-neu-bg text-neu-text px-4 py-3 rounded-xl outline-none transition-all placeholder-neu-textMuted/50 ${
-      hasError ? 'shadow-[inset_2px_2px_5px_rgba(239,68,68,0.3),inset_-2px_-2px_5px_rgba(239,68,68,0.1)]' : 'shadow-neu-pressed focus:shadow-neu-inset-sm'
-    }`;
-
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="bg-neu-bg p-8 rounded-3xl shadow-neu-flat w-full max-w-md">
-        {/* Title */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-neu-text">
-            {step === 1 ? 'Welcome' : 'Enter OTP'}
+    <div className="min-h-screen flex items-center justify-center p-4 bg-dark-900 bg-mesh relative overflow-hidden">
+      {/* Background Orbs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-primary/10 rounded-full blur-[120px]"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px]"></div>
+
+      <div className="glass-panel p-10 rounded-[2.5rem] w-full max-w-md relative z-10">
+        <div className="text-center mb-10">
+          <div className="w-16 h-16 bg-brand-primary rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-brand transform rotate-12 transition-transform hover:rotate-0 duration-500">
+            <span className="text-white text-3xl font-bold">W</span>
+          </div>
+          <h1 className="text-4xl font-bold text-white tracking-tight">
+            {step === 1 ? 'Welcome' : 'Verify'}
           </h1>
-          <p className="text-neu-textMuted text-sm mt-2">
-            {step === 1
-              ? 'Log in with your email or phone number'
-              : `OTP sent for ${identifier}`}
+          <p className="text-light-300/60 mt-2 font-medium">
+            {step === 1 ? 'Connect with the world' : `Code sent to ${identifier}`}
           </p>
         </div>
 
-        {/* Step 1 — Identifier + Name */}
+        {errorMsg && (
+          <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-2xl mb-8 animate-shake">
+            {errorMsg}
+          </div>
+        )}
+
         {step === 1 ? (
-          <form onSubmit={handleSendOtp} className="space-y-5" noValidate>
-            {/* Identifier field */}
-            <div>
-              <label className="block text-neu-textMuted text-sm font-medium mb-2">
-                Email or Phone Number
-                {identifierType && (
-                  <span className="ml-2 text-xs text-neu-primary">
-                    ({identifierType === 'email' ? '📧 Email detected' : '📱 Phone detected'})
-                  </span>
-                )}
-              </label>
+          <form onSubmit={handleSendOtp} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-light-300/80 ml-1">Account Info</label>
               <input
-                id="identifier"
                 type="text"
                 value={identifier}
-                onChange={handleIdentifierChange}
-                onBlur={() => { const err = validateIdentifier(); if (err) setErrorMsg(err); }}
-                placeholder="e.g. user@example.com or +91XXXXXXXXXX"
-                className={inputClass(errorMsg && !errorMsg.includes('Name'))}
-                autoComplete="username"
-                required
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="Email or phone"
+                className="glass-input w-full"
               />
             </div>
 
-            {/* Name field */}
-            <div>
-              <label className="block text-neu-textMuted text-sm font-medium mb-2">
-                Full Name <span className="text-neu-textMuted/50 text-xs">(required)</span>
-              </label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-light-300/80 ml-1">Your Name</label>
               <input
-                id="name"
                 type="text"
                 value={name}
-                onChange={(e) => { setName(e.target.value); setErrorMsg(''); }}
-                placeholder="Enter your full name"
-                className={inputClass(errorMsg && errorMsg.includes('Name'))}
-                autoComplete="name"
-                required
+                onChange={(e) => setName(e.target.value)}
+                placeholder="How should we call you?"
+                className="glass-input w-full"
               />
             </div>
-
-            {/* Inline error */}
-            {errorMsg && (
-              <div className="bg-red-500/10 border border-red-500/40 text-red-400 text-sm px-4 py-3 rounded-xl">
-                {errorMsg}
-              </div>
-            )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-neu-bg text-neu-primary font-semibold py-3 px-4 rounded-xl shadow-neu-sm hover:shadow-neu-flat active:shadow-neu-pressed transition-all duration-200 disabled:opacity-60"
+              className="w-full bg-brand-primary hover:bg-brand-secondary text-white font-bold py-4 rounded-2xl shadow-brand transition-all transform active:scale-[0.98] disabled:opacity-50"
             >
-              {loading ? 'Sending OTP...' : 'Send OTP'}
+              {loading ? 'Sending...' : 'Get Started'}
             </button>
           </form>
         ) : (
-          /* Step 2 — OTP */
-          <form onSubmit={handleVerifyOtp} className="space-y-5" noValidate>
-            {/* OTP display box */}
-            <div className="bg-neu-primary/10 border border-neu-primary/30 p-4 rounded-xl text-center">
-              <p className="text-neu-textMuted text-xs mb-1">Your OTP (for testing)</p>
-              <p className="text-neu-primary text-3xl font-mono tracking-[0.3em] font-bold">{generatedOtp}</p>
+          <form onSubmit={handleVerifyOtp} className="space-y-6">
+            <div className="bg-white/5 border border-white/10 p-6 rounded-3xl text-center mb-8">
+              <p className="text-light-300/50 text-xs uppercase tracking-widest mb-2 font-bold">Testing Code</p>
+              <p className="text-brand-primary text-4xl font-mono tracking-[0.2em] font-black">{generatedOtp}</p>
             </div>
 
-            <div>
-              <label className="block text-neu-textMuted text-sm font-medium mb-2">
-                6-Digit OTP
-              </label>
+            <div className="space-y-2">
               <input
-                id="otp"
                 type="text"
-                inputMode="numeric"
                 value={otp}
-                onChange={handleOtpChange}
-                placeholder="——————"
-                maxLength={6}
-                className={`w-full bg-neu-bg text-neu-text text-center tracking-[0.5em] font-mono text-2xl px-4 py-3 rounded-xl outline-none transition-all ${
-                  otpError
-                    ? 'shadow-[inset_2px_2px_5px_rgba(239,68,68,0.3),inset_-2px_-2px_5px_rgba(239,68,68,0.1)]'
-                    : 'shadow-neu-pressed focus:shadow-neu-inset-sm'
-                } placeholder-neu-textMuted/30`}
-                required
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                className="glass-input w-full text-center text-3xl font-mono tracking-[0.3em] py-5"
               />
-              {otpError && (
-                <p className="text-red-400 text-xs mt-2 ml-1">{otpError}</p>
-              )}
+              {otpError && <p className="text-red-400 text-xs mt-2 text-center">{otpError}</p>}
             </div>
 
             <button
               type="submit"
               disabled={loading || otp.length !== 6}
-              className="w-full bg-neu-bg text-neu-primary font-semibold py-3 px-4 rounded-xl shadow-neu-sm hover:shadow-neu-flat active:shadow-neu-pressed transition-all duration-200 disabled:opacity-60"
+              className="w-full bg-brand-primary hover:bg-brand-secondary text-white font-bold py-4 rounded-2xl shadow-brand transition-all transform active:scale-[0.98] disabled:opacity-50"
             >
-              {loading ? 'Verifying...' : 'Verify & Login'}
+              {loading ? 'Verifying...' : 'Verify & Continue'}
             </button>
 
             <button
               type="button"
-              onClick={() => { setStep(1); setOtp(''); setOtpError(''); }}
-              className="w-full text-neu-textMuted text-sm hover:text-neu-text transition-colors"
+              onClick={() => setStep(1)}
+              className="w-full text-light-300/40 text-sm hover:text-white transition-colors font-medium"
             >
-              ← Back
+              Change account details
             </button>
           </form>
         )}

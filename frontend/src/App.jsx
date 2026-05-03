@@ -62,16 +62,21 @@ function App() {
     setToken(null);
   };
 
+  const handleUpdateUser = (updatedUser) => {
+    sessionStorage.setItem('chatUser', JSON.stringify(updatedUser));
+    setCurrentUser(updatedUser);
+  };
+
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center text-neu-text bg-neu-bg">Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-neu-bg">
+    <div className="h-screen w-screen overflow-hidden bg-dark-900">
       {!currentUser ? (
         <Login onSendOtp={handleSendOtp} onVerifyOtp={handleVerifyOtp} />
       ) : (
-        <ChatLayout currentUser={currentUser} onLogout={handleLogout} token={token} />
+        <ChatLayout currentUser={currentUser} onLogout={handleLogout} onUpdateUser={handleUpdateUser} token={token} />
       )}
     </div>
   );

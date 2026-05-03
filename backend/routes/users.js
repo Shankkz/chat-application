@@ -28,4 +28,65 @@ router.get('/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// PUT /api/users/:id/name
+// Update user's name
+router.put('/:id/name', authMiddleware, async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Name is required' });
+    }
+
+    // Ensure the user is updating their own name
+    const tokenUserId = String(req.user.userId || req.user.id);
+    if (tokenUserId !== String(req.params.id)) {
+      console.log(`403 Unauthorized: tokenUserId (${tokenUserId}) !== req.params.id (${req.params.id})`);
+      return res.status(403).json({ error: 'Not authorized to update this user' });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { name: name.trim() },
+      { new: true, select: '-__v' }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Update name error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PUT /api/users/:id/avatar
+// Update user's profile picture
+router.put('/:id/avatar', authMiddleware, async (req, res) => {
+  try {
+    const { profilePicture } = req.body;
+
+    const tokenUserId = String(req.user.userId || req.user.id);
+    if (tokenUserId !== String(req.params.id)) {
+      return res.status(403).json({ error: 'Not authorized to update this user' });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { profilePicture },
+      { new: true, select: '-__v' }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Update avatar error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

@@ -8,15 +8,15 @@ import CallModal from './CallModal';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5005/api';
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5005';
 
-export default function ChatLayout({ currentUser, onLogout, token }) {
+export default function ChatLayout({ currentUser, onLogout, onUpdateUser, token }) {
   const [socket, setSocket] = useState(null);
   const [users, setUsers] = useState([]);
   const [activeChatUser, setActiveChatUser] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
-  const [unreadCounts, setUnreadCounts] = useState({}); // { [senderId]: count }
+  const [unreadCounts, setUnreadCounts] = useState({});
 
   const usersRef = useRef([]);
-  const activeChatUserRef = useRef(null); // ref so socket listeners can read latest value
+  const activeChatUserRef = useRef(null);
 
   // WebRTC States
   const [receivingCall, setReceivingCall] = useState(false);
@@ -31,37 +31,28 @@ export default function ChatLayout({ currentUser, onLogout, token }) {
   const connectionRef = useRef();
   const streamRef = useRef();
 
-  // Keep activeChatUserRef in sync
   useEffect(() => {
     activeChatUserRef.current = activeChatUser;
   }, [activeChatUser]);
 
   useEffect(() => {
-    // Connect to Socket.io
     const newSocket = io(SOCKET_URL, {
       transports: ['websocket', 'polling']
     });
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
-      console.log('Socket connected:', newSocket.id);
       newSocket.emit('user_connected', currentUser._id);
-    });
-
-    newSocket.on('connect_error', (err) => {
-      console.error('Socket connect error:', err);
     });
 
     newSocket.on('online_users', (users) => {
       setOnlineUsers(users);
     });
 
-    // Global receive_message handler for unread counts + new contact appearance
     newSocket.on('receive_message', async (message) => {
       const senderId = message.sender;
       const activeChat = activeChatUserRef.current;
 
-      // If the message is from someone other than the active chat → increment badge
       if (!activeChat || activeChat._id !== senderId) {
         setUnreadCounts(prev => ({
           ...prev,
@@ -69,7 +60,6 @@ export default function ChatLayout({ currentUser, onLogout, token }) {
         }));
       }
 
-      // If sender is not yet in the users list → fetch and add them
       const alreadyInList = usersRef.current.some(u => u._id === senderId);
       if (!alreadyInList && senderId !== currentUser._id) {
         try {
@@ -86,7 +76,6 @@ export default function ChatLayout({ currentUser, onLogout, token }) {
       }
     });
 
-    // WebRTC Listeners
     newSocket.on('incoming_call', (data) => {
       setReceivingCall(true);
       const callerName = usersRef.current.find(u => u._id === data.from)?.name || 'Someone';
@@ -98,7 +87,6 @@ export default function ChatLayout({ currentUser, onLogout, token }) {
   }, [currentUser._id]);
 
   useEffect(() => {
-    // Fetch available users
     const fetchUsers = async () => {
       try {
         const response = await axios.get(`${API_URL}/users`);
@@ -112,7 +100,6 @@ export default function ChatLayout({ currentUser, onLogout, token }) {
     fetchUsers();
   }, [currentUser._id]);
 
-  // Clear unread count when opening a chat
   const handleSelectChatUser = (user) => {
     setActiveChatUser(user);
     setUnreadCounts(prev => {
@@ -122,7 +109,6 @@ export default function ChatLayout({ currentUser, onLogout, token }) {
     });
   };
 
-  // WebRTC Methods
   const getMediaStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -140,30 +126,21 @@ export default function ChatLayout({ currentUser, onLogout, token }) {
   const callUser = async (idToCall) => {
     const stream = await getMediaStream();
     if (!stream) return;
-
     setIsCalling(true);
     setCallEnded(false);
 
     const peer = new RTCPeerConnection({
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:global.stun.twilio.com:3478' }
-      ]
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
     });
     connectionRef.current = peer;
-
     stream.getTracks().forEach(track => peer.addTrack(track, stream));
 
     peer.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.emit('ice_candidate', { to: idToCall, candidate: event.candidate });
-      }
+      if (event.candidate) socket.emit('ice_candidate', { to: idToCall, candidate: event.candidate });
     };
 
     peer.ontrack = (event) => {
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = event.streams[0];
-      }
+      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0];
     };
 
     peer.onnegotiationneeded = async () => {
@@ -171,9 +148,7 @@ export default function ChatLayout({ currentUser, onLogout, token }) {
         const offer = await peer.createOffer();
         await peer.setLocalDescription(offer);
         socket.emit('call_user', { userToCall: idToCall, signalData: peer.localDescription, from: currentUser._id });
-      } catch (err) {
-        console.error(err);
-      }
+      } catch (err) { console.error(err); }
     };
 
     socket.on('call_accepted', async (signal) => {
@@ -182,63 +157,37 @@ export default function ChatLayout({ currentUser, onLogout, token }) {
     });
 
     socket.on('ice_candidate', async (candidate) => {
-      try {
-        await peer.addIceCandidate(new RTCIceCandidate(candidate));
-      } catch (e) {
-        console.error('Error adding received ice candidate', e);
-      }
+      try { await peer.addIceCandidate(new RTCIceCandidate(candidate)); } catch (e) { }
     });
 
-    socket.on('call_ended', () => {
-      handleEndCall(false);
-    });
+    socket.on('call_ended', () => handleEndCall(false));
   };
 
   const answerCall = async () => {
     setCallAccepted(true);
     setReceivingCall(false);
-
     const stream = await getMediaStream();
     if (!stream) return;
 
     const peer = new RTCPeerConnection({
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:global.stun.twilio.com:3478' }
-      ]
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
     });
     connectionRef.current = peer;
-
     stream.getTracks().forEach(track => peer.addTrack(track, stream));
 
     peer.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.emit('ice_candidate', { to: caller.id, candidate: event.candidate });
-      }
+      if (event.candidate) socket.emit('ice_candidate', { to: caller.id, candidate: event.candidate });
     };
 
     peer.ontrack = (event) => {
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = event.streams[0];
-      }
+      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0];
     };
 
-    socket.on('ice_candidate', async (candidate) => {
-      try {
-        await peer.addIceCandidate(new RTCIceCandidate(candidate));
-      } catch (e) {
-        console.error('Error adding received ice candidate', e);
-      }
-    });
-
-    socket.on('call_ended', () => {
-      handleEndCall(false);
-    });
+    socket.on('call_ended', () => handleEndCall(false));
 
     await peer.setRemoteDescription(new RTCSessionDescription(callerSignal));
     const answer = await peer.createAnswer();
     await peer.setLocalDescription(answer);
-
     socket.emit('answer_call', { signal: peer.localDescription, to: caller.id });
   };
 
@@ -266,9 +215,10 @@ export default function ChatLayout({ currentUser, onLogout, token }) {
   const showCallModal = receivingCall || callAccepted || isCalling;
 
   return (
-    <div className="h-screen w-full flex items-center justify-center p-4 sm:p-8">
+    <div className="h-full w-full flex items-center justify-center p-0 md:p-8 bg-dark-900 bg-mesh relative overflow-hidden">
+      {/* Background Orbs */}
       {showCallModal && (
-        <CallModal 
+        <CallModal
           call={caller}
           acceptedCall={callAccepted}
           localVideoRef={localVideoRef}
@@ -280,33 +230,40 @@ export default function ChatLayout({ currentUser, onLogout, token }) {
         />
       )}
 
-      <div className="w-full h-full max-w-6xl flex rounded-3xl overflow-hidden shadow-neu-flat bg-neu-bg">
+      <div className="w-full h-full max-w-7xl flex md:rounded-[2.5rem] glass-panel relative z-10 border-0 md:border border-white/5 overflow-hidden">
         {/* Sidebar */}
-        <div className="w-full md:w-1/3 h-full border-r border-neu-dark/30">
-          <Sidebar 
-            users={users} 
-            activeChatUser={activeChatUser} 
+        <div className="w-full md:w-[380px] h-full flex-shrink-0">
+          <Sidebar
+            users={users}
+            activeChatUser={activeChatUser}
             setActiveChatUser={handleSelectChatUser}
             currentUser={currentUser}
             onLogout={onLogout}
+            onUpdateUser={onUpdateUser}
             onlineUsers={onlineUsers}
             unreadCounts={unreadCounts}
           />
         </div>
 
         {/* Main Chat Area */}
-        <div className="hidden md:flex w-2/3 h-full flex-col">
+        <div className="hidden md:flex flex-1 h-full flex-col min-w-0 bg-white/[0.01]">
           {activeChatUser ? (
-            <ChatArea 
-              currentUser={currentUser} 
-              activeChatUser={activeChatUser} 
-              socket={socket} 
+            <ChatArea
+              currentUser={currentUser}
+              activeChatUser={activeChatUser}
+              socket={socket}
               onCallUser={() => callUser(activeChatUser._id)}
               onlineUsers={onlineUsers}
             />
           ) : (
-            <div className="flex-1 flex items-center justify-center text-neu-textMuted bg-neu-bg shadow-neu-pressed m-4 rounded-3xl">
-              <p className="text-xl">Select a chat to start messaging</p>
+            <div className="flex-1 flex flex-col items-center justify-center space-y-6 text-center p-12">
+              <div className="w-32 h-32 bg-white/5 rounded-[2.5rem] flex items-center justify-center shadow-soft border border-white/5 animate-bounce-slow">
+                <span className="text-brand-primary text-5xl font-black">W</span>
+              </div>
+              <div>
+                <h2 className="text-3xl font-black text-white tracking-tight">WhatsApp Premium</h2>
+                <p className="text-light-300/30 font-medium mt-2 max-w-xs mx-auto">Select a friend from the sidebar to start a secure conversation.</p>
+              </div>
             </div>
           )}
         </div>

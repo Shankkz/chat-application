@@ -23,6 +23,10 @@ const userSchema = new mongoose.Schema({
     sparse: true,
     trim: true,
   },
+  profilePicture: {
+    type: String,
+    required: false,
+  },
   isOnline: {
     type: Boolean,
     default: false,
