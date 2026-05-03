@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-neu-bg text-neu-text;
+    margin: 0;
+    font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom scrollbar for chat area */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-neu-dark rounded-full;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-neu-light rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-neu-textMuted;
+}
