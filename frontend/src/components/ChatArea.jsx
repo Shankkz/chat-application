@@ -3,6 +3,7 @@ import axios from 'axios';
 import { FiSend, FiVideo, FiMoreVertical, FiSmile, FiPaperclip, FiArrowLeft, FiTrash2 } from 'react-icons/fi';
 import EmojiPicker from 'emoji-picker-react';
 import MessageBubble from './MessageBubble';
+import ConfirmModal from './ConfirmModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5005/api';
 
@@ -13,6 +14,7 @@ export default function ChatArea({ currentUser, activeChatUser, socket, onCallUs
   const [showDropdown, setShowDropdown] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   
   const typingTimeoutRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -133,18 +135,16 @@ export default function ChatArea({ currentUser, activeChatUser, socket, onCallUs
   };
 
   const handleClearChat = async () => {
-    if (!window.confirm(`Are you sure you want to clear this chat with ${activeChatUser.name}?`)) return;
-    
     try {
       await axios.put(`${API_URL}/messages/clear`, {
         userId: currentUser._id,
         chatUserId: activeChatUser._id
       });
-      setMessages([]); // Clear locally
+      setMessages([]);
+      setShowClearConfirm(false);
       setShowDropdown(false);
     } catch (error) {
       console.error('Failed to clear chat', error);
-      alert('Failed to clear chat');
     }
   };
 
@@ -209,7 +209,7 @@ export default function ChatArea({ currentUser, activeChatUser, socket, onCallUs
             {showDropdown && (
               <div className="absolute top-14 right-0 w-48 bg-dark-800 border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50">
                 <button 
-                  onClick={handleClearChat}
+                  onClick={() => { setShowDropdown(false); setShowClearConfirm(true); }}
                   className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-white/5 transition-all flex items-center space-x-3"
                 >
                   <FiTrash2 size={16} />
@@ -306,13 +306,23 @@ export default function ChatArea({ currentUser, activeChatUser, socket, onCallUs
 
           <button
             type="submit"
-            disabled={!newMessage.trim()}
+            disabled={!newMessage.trim() && !selectedImage}
             className="p-3.5 rounded-xl bg-brand-primary text-white shadow-brand hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
           >
             <FiSend size={22} />
           </button>
         </form>
       </div>
+      {showClearConfirm && (
+        <ConfirmModal
+          title="Clear Chat"
+          message={`All messages with ${activeChatUser.name} will be removed for you. This cannot be undone.`}
+          confirmLabel="Clear"
+          confirmDanger
+          onConfirm={handleClearChat}
+          onCancel={() => setShowClearConfirm(false)}
+        />
+      )}
     </div>
   );
 }

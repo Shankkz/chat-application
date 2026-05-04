@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { FiLogOut, FiSearch, FiMoreVertical, FiEdit2, FiImage } from 'react-icons/fi';
 import axios from 'axios';
+import ConfirmModal from './ConfirmModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5005/api';
 
 export default function Sidebar({ users, activeChatUser, setActiveChatUser, currentUser, onLogout, onUpdateUser, onlineUsers, unreadCounts }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [newName, setNewName] = useState(currentUser.name);
   const [isUpdating, setIsUpdating] = useState(false);
   const dropdownRef = useRef(null);
@@ -127,7 +129,7 @@ export default function Sidebar({ users, activeChatUser, setActiveChatUser, curr
           />
 
           <button
-            onClick={onLogout}
+            onClick={() => setShowLogoutConfirm(true)}
             className="p-2.5 rounded-xl text-light-300/40 hover:text-red-400 hover:bg-red-500/10 transition-all"
             title="Logout"
           >
@@ -241,6 +243,16 @@ export default function Sidebar({ users, activeChatUser, setActiveChatUser, curr
             </form>
           </div>
         </div>
+      )}
+      {showLogoutConfirm && (
+        <ConfirmModal
+          title="Log Out"
+          message="Are you sure you want to log out of your account?"
+          confirmLabel="Log Out"
+          confirmDanger
+          onConfirm={onLogout}
+          onCancel={() => setShowLogoutConfirm(false)}
+        />
       )}
     </div>
   );
