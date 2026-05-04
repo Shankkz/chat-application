@@ -1,14 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
-import axios from 'axios';
-import Sidebar from './Sidebar';
+import client from '../../api/client';
+import Sidebar from '../users/Sidebar';
 import ChatArea from './ChatArea';
-import CallModal from './CallModal';
+import CallModal from '../../shared/CallModal';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5005/api';
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5005';
 
-export default function ChatLayout({ currentUser, onLogout, onUpdateUser, token }) {
+export default function ChatLayout({ currentUser, onLogout, onUpdateUser }) {
   const [socket, setSocket] = useState(null);
   const [users, setUsers] = useState([]);
   const [activeChatUser, setActiveChatUser] = useState(null);
@@ -24,7 +23,6 @@ export default function ChatLayout({ currentUser, onLogout, onUpdateUser, token 
   const [callerSignal, setCallerSignal] = useState(null);
   const [callAccepted, setCallAccepted] = useState(false);
   const [isCalling, setIsCalling] = useState(false);
-  const [callEnded, setCallEnded] = useState(false);
 
   const localVideoRef = useRef();
   const remoteVideoRef = useRef();
@@ -63,10 +61,9 @@ export default function ChatLayout({ currentUser, onLogout, onUpdateUser, token 
       const alreadyInList = usersRef.current.some(u => u._id === senderId);
       if (!alreadyInList && senderId !== currentUser._id) {
         try {
-          const response = await axios.get(`${API_URL}/users/${senderId}`);
-          const newUser = response.data;
+          const { data } = await client.get(`/users/${senderId}`);
           setUsers(prev => {
-            const updated = [newUser, ...prev];
+            const updated = [data, ...prev];
             usersRef.current = updated;
             return updated;
           });
@@ -83,14 +80,16 @@ export default function ChatLayout({ currentUser, onLogout, onUpdateUser, token 
       setCallerSignal(data.signal);
     });
 
+    newSocket.on('call_ended', () => handleEndCall(false));
+
     return () => newSocket.close();
   }, [currentUser._id]);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get(`${API_URL}/users`);
-        const fetchedUsers = response.data.filter(u => u._id !== currentUser._id);
+        const { data } = await client.get('/users');
+        const fetchedUsers = data.filter(u => u._id !== currentUser._id);
         setUsers(fetchedUsers);
         usersRef.current = fetchedUsers;
       } catch (error) {
@@ -127,7 +126,6 @@ export default function ChatLayout({ currentUser, onLogout, onUpdateUser, token 
     const stream = await getMediaStream();
     if (!stream) return;
     setIsCalling(true);
-    setCallEnded(false);
 
     const peer = new RTCPeerConnection({
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
@@ -159,8 +157,6 @@ export default function ChatLayout({ currentUser, onLogout, onUpdateUser, token 
     socket.on('ice_candidate', async (candidate) => {
       try { await peer.addIceCandidate(new RTCIceCandidate(candidate)); } catch (e) { }
     });
-
-    socket.on('call_ended', () => handleEndCall(false));
   };
 
   const answerCall = async () => {
@@ -183,8 +179,6 @@ export default function ChatLayout({ currentUser, onLogout, onUpdateUser, token 
       if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0];
     };
 
-    socket.on('call_ended', () => handleEndCall(false));
-
     await peer.setRemoteDescription(new RTCSessionDescription(callerSignal));
     const answer = await peer.createAnswer();
     await peer.setLocalDescription(answer);
@@ -192,7 +186,6 @@ export default function ChatLayout({ currentUser, onLogout, onUpdateUser, token 
   };
 
   const handleEndCall = (emit = true) => {
-    setCallEnded(true);
     setCallAccepted(false);
     setReceivingCall(false);
     setIsCalling(false);
@@ -216,7 +209,6 @@ export default function ChatLayout({ currentUser, onLogout, onUpdateUser, token 
 
   return (
     <div className="h-full w-full flex items-center justify-center p-0 md:p-8 bg-dark-900 bg-mesh relative overflow-hidden">
-      {/* Background Orbs */}
       {showCallModal && (
         <CallModal
           call={caller}
@@ -231,7 +223,6 @@ export default function ChatLayout({ currentUser, onLogout, onUpdateUser, token 
       )}
 
       <div className="w-full h-full max-w-7xl flex md:rounded-[2.5rem] glass-panel relative z-10 border-0 md:border border-white/5 overflow-hidden">
-        {/* Sidebar */}
         <div className="w-full md:w-[380px] h-full flex-shrink-0">
           <Sidebar
             users={users}
@@ -245,7 +236,6 @@ export default function ChatLayout({ currentUser, onLogout, onUpdateUser, token 
           />
         </div>
 
-        {/* Main Chat Area */}
         <div className="hidden md:flex flex-1 h-full flex-col min-w-0 bg-white/[0.01]">
           {activeChatUser ? (
             <ChatArea
@@ -254,6 +244,7 @@ export default function ChatLayout({ currentUser, onLogout, onUpdateUser, token 
               socket={socket}
               onCallUser={() => callUser(activeChatUser._id)}
               onlineUsers={onlineUsers}
+              onBack={() => setActiveChatUser(null)}
             />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center space-y-6 text-center p-12">

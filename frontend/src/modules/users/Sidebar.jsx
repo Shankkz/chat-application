@@ -1,9 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { FiLogOut, FiSearch, FiMoreVertical, FiEdit2, FiImage } from 'react-icons/fi';
-import axios from 'axios';
-import ConfirmModal from './ConfirmModal';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5005/api';
+import client from '../../api/client';
+import ConfirmModal from '../../shared/ConfirmModal';
 
 export default function Sidebar({ users, activeChatUser, setActiveChatUser, currentUser, onLogout, onUpdateUser, onlineUsers, unreadCounts }) {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -14,7 +12,6 @@ export default function Sidebar({ users, activeChatUser, setActiveChatUser, curr
   const dropdownRef = useRef(null);
   const avatarInputRef = useRef(null);
 
-  // Close dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -27,74 +24,66 @@ export default function Sidebar({ users, activeChatUser, setActiveChatUser, curr
 
   const handleUpdateName = async (e) => {
     e.preventDefault();
-    if (!newName.trim() || newName.trim() === currentUser.name) {
-      setShowEditModal(false);
-      return;
-    }
-
+    if (!newName.trim()) return;
     setIsUpdating(true);
     try {
-      const response = await axios.put(`${API_URL}/users/${currentUser._id}/name`, { name: newName });
-      if (onUpdateUser) onUpdateUser(response.data);
+      const { data } = await client.put(`/users/${currentUser._id}/name`, { name: newName.trim() });
+      if (onUpdateUser) onUpdateUser(data);
       setShowEditModal(false);
+      setShowDropdown(false);
     } catch (error) {
       console.error('Failed to update name', error);
-      alert('Failed to update name');
     } finally {
       setIsUpdating(false);
     }
   };
 
-  const handleAvatarUpload = async (e) => {
+  const handleAvatarUpload = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        try {
-          const response = await axios.put(`${API_URL}/users/${currentUser._id}/avatar`, {
-            profilePicture: reader.result
-          });
-          if (onUpdateUser) onUpdateUser(response.data);
-          setShowDropdown(false);
-        } catch (error) {
-          console.error('Failed to upload avatar', error);
-          alert('Failed to upload avatar');
-        }
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
+        const { data } = await client.put(`/users/${currentUser._id}/avatar`, { profilePicture: reader.result });
+        if (onUpdateUser) onUpdateUser(data);
+        setShowDropdown(false);
+      } catch (error) {
+        console.error('Failed to upload avatar', error);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   return (
-    <div className="flex flex-col h-full bg-dark-900 border-r border-white/5">
+    <div className="w-full h-full flex flex-col bg-dark-900 border-r border-white/5 relative z-30">
       {/* Header */}
       <div className="p-5 flex justify-between items-center bg-white/[0.01] backdrop-blur-md">
         <div className="flex items-center space-x-4">
-          <button
+          <button 
             onClick={() => avatarInputRef.current?.click()}
-            className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-primary to-brand-secondary p-[2px] hover:scale-105 active:scale-95 transition-all focus:outline-none"
+            className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-primary to-brand-secondary p-[2px] hover:scale-105 active:scale-95 transition-all focus:outline-none relative group"
             title="Change Avatar"
           >
-            <div className="w-full h-full rounded-[14px] bg-dark-900 flex items-center justify-center text-white font-bold text-xl overflow-hidden relative group">
+            <div className="w-full h-full rounded-[14px] bg-dark-900 flex items-center justify-center overflow-hidden">
               {currentUser.profilePicture ? (
                 <img src={currentUser.profilePicture} alt={currentUser.name} className="w-full h-full object-cover" />
               ) : (
-                currentUser.name?.charAt(0).toUpperCase()
+                <span className="text-white font-bold text-lg">{currentUser.name?.charAt(0).toUpperCase()}</span>
               )}
-              {/* Hover overlay */}
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <FiImage size={16} className="text-white" />
-              </div>
+            </div>
+            <div className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <FiImage className="text-white" size={18} />
             </div>
           </button>
-          <div className="hidden lg:block">
-            <h2 className="font-bold text-white leading-none">{currentUser.name}</h2>
-            <span className="text-xs text-brand-primary font-medium">My Profile</span>
+          <div className="flex flex-col">
+            <h3 className="text-white font-bold tracking-tight leading-none truncate max-w-[120px]">{currentUser.name}</h3>
+            <span className="text-xs text-brand-primary font-medium mt-1">My Profile</span>
           </div>
         </div>
 
         <div className="flex items-center space-x-2 relative" ref={dropdownRef}>
-          <button
+          <button 
             onClick={() => setShowDropdown(!showDropdown)}
             className="p-2.5 rounded-xl text-light-300/60 hover:bg-white/5 hover:text-white transition-all"
           >
@@ -103,14 +92,14 @@ export default function Sidebar({ users, activeChatUser, setActiveChatUser, curr
 
           {showDropdown && (
             <div className="absolute top-12 right-0 w-48 bg-dark-800 border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50">
-              <button
+              <button 
                 onClick={() => { setShowDropdown(false); setShowEditModal(true); }}
                 className="w-full text-left px-4 py-3 text-sm text-white hover:bg-white/5 transition-all flex items-center space-x-3"
               >
                 <FiEdit2 size={16} />
                 <span>Change Name</span>
               </button>
-              <button
+              <button 
                 onClick={() => avatarInputRef.current?.click()}
                 className="w-full text-left px-4 py-3 text-sm text-white hover:bg-white/5 transition-all flex items-center space-x-3"
               >
@@ -137,18 +126,6 @@ export default function Sidebar({ users, activeChatUser, setActiveChatUser, curr
           </button>
         </div>
       </div>
-
-
-      {/* <div className="px-5 py-4">
-        <div className="relative group">
-          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-light-300/30 group-focus-within:text-brand-primary transition-colors" size={18} />
-          <input 
-            type="text" 
-            placeholder="Search conversations..." 
-            className="w-full bg-white/5 border border-white/5 rounded-2xl py-3 pl-12 pr-4 text-sm text-white outline-none focus:bg-white/10 focus:border-brand-primary/20 transition-all placeholder:text-light-300/20"
-          />
-        </div>
-      </div> */}
 
       {/* Users List */}
       <div className="flex-1 overflow-y-auto px-3 py-5 space-y-1">
@@ -190,7 +167,6 @@ export default function Sidebar({ users, activeChatUser, setActiveChatUser, curr
                     <h3 className={`font-bold truncate transition-colors ${isActive ? 'text-white' : 'text-light-300 group-hover:text-white'}`}>
                       {user.name}
                     </h3>
-                    <span className="text-[10px] text-light-300/30 font-medium">12:45 PM</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <p className="text-light-300/40 text-xs truncate font-medium">
@@ -244,6 +220,7 @@ export default function Sidebar({ users, activeChatUser, setActiveChatUser, curr
           </div>
         </div>
       )}
+
       {showLogoutConfirm && (
         <ConfirmModal
           title="Log Out"

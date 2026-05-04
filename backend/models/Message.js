@@ -1,37 +1,43 @@
 const mongoose = require('mongoose');
 
-const messageSchema = new mongoose.Schema({
-  sender: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+const messageSchema = new mongoose.Schema(
+  {
+    sender: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+    receiver: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+    text: {
+      type: String,
+      default: '',
+    },
+    imageUrl: {
+      type: String,
+      default: null,
+    },
+    status: {
+      type: String,
+      enum: ['sent', 'delivered', 'read'],
+      default: 'sent',
+    },
+    deletedFor: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
   },
-  receiver: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  text: {
-    type: String,
-    required: false
-  },
-  imageUrl: {
-    type: String,
-    required: false
-  },
-  status: {
-    type: String,
-    enum: ['sent', 'delivered', 'read'],
-    default: 'sent'
-  },
-  deletedFor: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+  { timestamps: true }
+);
+
+messageSchema.index({ sender: 1, receiver: 1, createdAt: -1 });
+messageSchema.index({ receiver: 1, sender: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Message', messageSchema);

@@ -4,7 +4,7 @@ export default function CallModal({ call, acceptedCall, localVideoRef, remoteVid
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-2xl bg-dark-900/80">
       <div className="glass-panel w-full max-w-4xl h-[80vh] rounded-[3rem] flex flex-col relative">
-
+        
         {/* Remote Video (Full Screen) */}
         <div className="absolute inset-0 bg-dark-800">
           {acceptedCall ? (
@@ -34,7 +34,7 @@ export default function CallModal({ call, acceptedCall, localVideoRef, remoteVid
         </div>
 
         {/* Local Video (Floating) */}
-        <div className="absolute top-8 right-8 w-48 h-64 glass-panel rounded-3xl z-10 border-2 border-white/10 shadow-2xl">
+        <div className="absolute top-8 right-8 w-48 aspect-video bg-dark-900 rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-20">
           <video
             playsInline
             muted
@@ -44,37 +44,36 @@ export default function CallModal({ call, acceptedCall, localVideoRef, remoteVid
           />
         </div>
 
-        {/* Bottom Controls */}
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center space-x-6 px-10 py-6 glass-panel rounded-full border-white/10 shadow-2xl">
+        {/* Controls */}
+        <div className="mt-auto p-12 flex justify-center items-center space-x-6 relative z-30">
           {!acceptedCall && !isCalling ? (
-            <>
-              <button
-                onClick={answerCall}
-                className="w-16 h-16 rounded-full bg-brand-primary text-white flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-brand"
-              >
-                <FiVideo size={28} />
-              </button>
-              <button
-                onClick={rejectCall}
-                className="w-16 h-16 rounded-full bg-red-500 text-white flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg"
-              >
-                <FiPhoneOff size={28} />
-              </button>
-            </>
+             <>
+               <button
+                 onClick={rejectCall}
+                 className="w-16 h-16 rounded-2xl bg-red-500 text-white flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all"
+               >
+                 <FiPhoneOff size={24} />
+               </button>
+               <button
+                 onClick={answerCall}
+                 className="w-16 h-16 rounded-2xl bg-brand-primary text-white flex items-center justify-center shadow-brand hover:scale-110 active:scale-95 transition-all"
+               >
+                 <FiVideo size={24} />
+               </button>
+             </>
           ) : (
             <>
-              <button className="w-14 h-14 rounded-full bg-white/5 text-white flex items-center justify-center hover:bg-white/10 transition-all">
-                <FiMic size={24} />
+              <button className="w-14 h-14 rounded-2xl bg-white/5 text-white flex items-center justify-center hover:bg-white/10 transition-all">
+                <FiMic size={20} />
               </button>
-              <button className="w-14 h-14 rounded-full bg-white/5 text-white flex items-center justify-center hover:bg-white/10 transition-all">
-                <FiVideo size={24} />
-              </button>
-              <div className="w-[1px] h-10 bg-white/10 mx-2"></div>
               <button
                 onClick={endCall}
-                className="w-16 h-16 rounded-full bg-red-500 text-white flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg"
+                className="w-20 h-20 rounded-3xl bg-red-500 text-white flex items-center justify-center shadow-lg hover:rotate-[135deg] hover:bg-red-600 transition-all duration-500"
               >
                 <FiPhoneOff size={28} />
+              </button>
+              <button className="w-14 h-14 rounded-2xl bg-white/5 text-white flex items-center justify-center hover:bg-white/10 transition-all">
+                <FiVideo size={20} />
               </button>
             </>
           )}
