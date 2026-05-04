@@ -2,7 +2,13 @@ import { FiCheck, FiCheckCircle } from 'react-icons/fi';
 
 export default function MessageBubble({ message, isOwnMessage }) {
   const formatTime = (date) => {
-    return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (!date) return '';
+    try {
+      const d = new Date(date);
+      return isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      return '';
+    }
   };
 
   const getStatusIcon = () => {

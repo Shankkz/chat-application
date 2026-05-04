@@ -248,13 +248,23 @@ export default function ChatArea({ currentUser, activeChatUser, socket, onCallUs
 
         {loadingMessages ? (
           <MessageSkeleton />
+        ) : (!messages || messages.length === 0) ? (
+          <div className="flex-1 flex flex-col items-center justify-center opacity-20 py-20 text-center">
+            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4">
+              <FiSend size={32} className="text-brand-primary" />
+            </div>
+            <p className="text-white text-sm font-bold uppercase tracking-widest">No messages yet</p>
+            <p className="text-light-300 text-xs mt-1">Start the conversation below!</p>
+          </div>
         ) : (
           messages.map((msg, idx) => (
-            <MessageBubble
-              key={msg._id || idx}
-              message={msg}
-              isOwnMessage={String(msg.sender) === String(currentUser._id)}
-            />
+            msg && (
+              <MessageBubble
+                key={msg._id || idx}
+                message={msg}
+                isOwnMessage={msg.sender && currentUser && String(msg.sender) === String(currentUser._id)}
+              />
+            )
           ))
         )}
 
